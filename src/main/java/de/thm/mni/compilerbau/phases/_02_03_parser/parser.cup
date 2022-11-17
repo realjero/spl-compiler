@@ -51,140 +51,141 @@ terminal Integer INTLIT;      //Integer literals
 /* Non-terminals */
 nonterminal Program program;
 
-nonterminal globalDeclarations;
+nonterminal List<GlobalDeclaration> globalDeclarations;
+nonterminal GlobalDeclaration globalDeclaration;
 
 // TYPE/VARIABLE/ARRAY
-nonterminal variables;
+nonterminal List<VariableDeclaration> variables;
 
-nonterminal typeDeclaration;
-nonterminal variableDeclaration;
+nonterminal TypeDeclaration typeDeclaration;
+nonterminal VariableDeclaration variableDeclaration;
 
-nonterminal namedTypeExpression;
-nonterminal arrayTypeExpression;
-nonterminal variableExpression;
+nonterminal NamedTypeExpression namedTypeExpression;
+nonterminal ArrayTypeExpression arrayTypeExpression;
+nonterminal Variable variable;
 
-nonterminal arrayAccess;
-nonterminal dimAccess;
+nonterminal ArrayAccess arrayAccess;
+nonterminal Expression dimAccess;
 
-nonterminal namedVariable;
-nonterminal intLiteral;
+nonterminal NamedVariable namedVariable;
+nonterminal IntLiteral intLiteral;
 
 // PRECEDENCE & COMPARABLE
-nonterminal binaryExpression;
-nonterminal expr_comparable;
-nonterminal expr;
-nonterminal term;
-nonterminal faktor;
+nonterminal Expression binaryExpression;
+nonterminal Expression expr_comparable;
+nonterminal Expression expr;
+nonterminal Expression term;
+nonterminal Expression faktor;
 
 // PROC
-nonterminal procedureDeclaration;
-nonterminal parameters;
-nonterminal parameterDeclaration;
+nonterminal ProcedureDeclaration procedureDeclaration;
+nonterminal List<ParameterDeclaration> parameters;
+nonterminal ParameterDeclaration parameterDeclaration;
 
 // BODY
-nonterminal body;
-nonterminal statements;
-nonterminal assignStatement;
-nonterminal ifStatement;
-nonterminal callStatment;
-nonterminal whileStatement;
+nonterminal List<Statement> body;
+nonterminal Statement statement;
+nonterminal AssignStatement assignStatement;
+nonterminal IfStatement ifStatement;
+nonterminal CallStatement callStatement;
+nonterminal WhileStatement whileStatement;
 
-nonterminal arguments;
+nonterminal List<Expression> arguments;
 
 start with program;
 
 
 
-program ::=                     program globalDeclarations
-                                | globalDeclarations;
+program ::=                     globalDeclarations:gdls                                                                 {:RESULT = new Program(new Position(gdlsleft, gdlsright), gdls);:};
 
-globalDeclarations ::=          typeDeclaration
-                                | procedureDeclaration;
+globalDeclarations ::=          globalDeclaration:gdl globalDeclarations:gdls                                           {:RESULT = cons(gdl, gdls);:}
+                                | /* empty */                                                                           {:RESULT = nil();:};
+
+globalDeclaration ::=           typeDeclaration:td                                                                      {:RESULT = td;:}
+                                | procedureDeclaration:pd                                                               {:RESULT = pd;:};
 
 
 // TYPE/VARIABLE/ARRAY
-variables ::=                   variables variableDeclaration
-                                | /*empty*/;
+variables ::=                   variableDeclaration:vd variables:vs                                                     {:RESULT = cons(vd, vs);:}
+                                | /*empty*/                                                                             {:RESULT = nil();:};
 
-typeDeclaration ::=             TYPE IDENT EQ namedTypeExpression SEMIC
-                                | TYPE IDENT EQ arrayTypeExpression SEMIC;
+typeDeclaration ::=             TYPE:pos IDENT:id EQ namedTypeExpression:expr SEMIC                                     {:RESULT = new TypeDeclaration(new Position(posleft, posright), id, expr);:}
+                                | TYPE:pos IDENT:id EQ arrayTypeExpression:expr SEMIC                                   {:RESULT = new TypeDeclaration(new Position(posleft, posright), id, expr);:};
 
-variableDeclaration::=          VAR IDENT COLON namedTypeExpression SEMIC
-                                | VAR IDENT COLON arrayTypeExpression SEMIC;
+variableDeclaration::=          VAR:pos IDENT:id COLON namedTypeExpression:expr SEMIC                                   {:RESULT = new VariableDeclaration(new Position(posleft, posright), id, expr);:}
+                                | VAR:pos IDENT:id COLON arrayTypeExpression:expr SEMIC                                 {:RESULT = new VariableDeclaration(new Position(posleft, posright), id, expr);:};
 
-namedTypeExpression ::=         IDENT;
+namedTypeExpression ::=         IDENT:id                                                                                {:RESULT = new NamedTypeExpression(new Position(idleft, idright), id);:};
 
-arrayTypeExpression ::=         ARRAY LBRACK INTLIT RBRACK OF arrayTypeExpression
-                                | ARRAY LBRACK INTLIT RBRACK OF namedTypeExpression;
+arrayTypeExpression ::=         ARRAY:pos LBRACK INTLIT:size RBRACK OF arrayTypeExpression:expr                         {:RESULT = new ArrayTypeExpression(new Position(posleft, posright), size, expr);:}
+                                | ARRAY:pos LBRACK INTLIT:size RBRACK OF namedTypeExpression:expr                       {:RESULT = new ArrayTypeExpression(new Position(posleft, posright), size, expr);:};
 
-variableExpression ::=          namedVariable;
+variable ::=                    namedVariable:nV                                                                        {:RESULT = nV;:}
+                                | arrayAccess:a                                                                         {:RESULT = a;:};
 
-arrayAccess ::=                 namedVariable dimAccess;
+arrayAccess ::=                 variable:pos LBRACK expr:index RBRACK                                                   {:RESULT = new ArrayAccess(new Position(posleft, posright), pos, index);:};
 
-dimAccess ::=                   dimAccess LBRACK binaryExpression RBRACK
-                                | LBRACK binaryExpression RBRACK;
-
-namedVariable ::=               IDENT;
-intLiteral ::=                  INTLIT;
+namedVariable ::=               IDENT:id                                                                                {:RESULT = new NamedVariable(new Position(idleft, idright), id);:};
+intLiteral ::=                  INTLIT:i                                                                                {:RESULT = new IntLiteral(new Position(ileft, iright), i);:};
 
 
 // PRECEDENCE
-binaryExpression ::=            expr_comparable
-                                | expr;
+binaryExpression ::=            expr_comparable:ec                                                                      {:RESULT = ec;:}
+                                | expr:e                                                                                {:RESULT = e;:};
 
-expr_comparable ::=             expr LT expr
-                                | expr LE expr
-                                | expr GT expr
-                                | expr GE expr
-                                | expr NE expr
-                                | expr EQ expr;
+expr_comparable ::=             expr:e1 LT:op expr:e2                                                                   {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.LST, e1, e2);:}
+                                | expr:e1 LE:op expr:e2                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.LSE, e1, e2);:}
+                                | expr:e1 GT:op expr:e2                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.GRT, e1, e2);:}
+                                | expr:e1 GE:op expr:e2                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.GRE, e1, e2);:}
+                                | expr:e1 NE:op expr:e2                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.NEQ, e1, e2);:}
+                                | expr:e1 EQ:op expr:e2                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.EQU, e1, e2);:};
 
-expr ::=                        expr PLUS term
-                                | expr MINUS term
-                                | term;
+expr ::=                        expr:e PLUS:op term:t                                                                   {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.ADD, e, t);:}
+                                | expr:e MINUS:op term:t                                                                {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.SUB, e, t);:}
+                                | term:t                                                                                {:RESULT = t;:};
 
-term ::=                        term STAR faktor
-                                | term SLASH faktor
-                                | faktor;
+term ::=                        term:t STAR:op faktor:f                                                                 {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.MUL, t, f);:}
+                                | term:t SLASH:op faktor:f                                                              {:RESULT = new BinaryExpression(new Position(opleft, opright), BinaryExpression.Operator.DIV, t, f);:}
+                                | faktor:f                                                                              {:RESULT = f;:};
 
-faktor ::=                      LPAREN expr RPAREN
-                                | MINUS faktor
-                                | variableExpression
-                                | intLiteral
-                                | arrayAccess;
+faktor ::=                      LPAREN expr:e RPAREN                                                                    {:RESULT = e;:}
+                                | MINUS:op faktor:f                                                                     {:RESULT = new UnaryExpression(new Position(opleft, opright), UnaryExpression.Operator.MINUS, f);:}
+                                | variable:v                                                                            {:RESULT = new VariableExpression(new Position(vleft, vright), v);:}
+                                | intLiteral:i                                                                          {:RESULT = i;:};
 
 
 // PROC
-procedureDeclaration ::=        PROC IDENT LPAREN parameters RPAREN LCURL variables body RCURL;
+procedureDeclaration ::=        PROC:pos IDENT:id LPAREN parameters:p RPAREN LCURL variables:v body:b RCURL             {:RESULT = new ProcedureDeclaration(new Position(posleft, posright), id, p, v, b);:};
 
-parameters ::=                  parameters COMMA parameterDeclaration
-                                | parameterDeclaration
-                                | /* empty */;
+parameters ::=                  parameterDeclaration:pd COMMA parameters:p                                              {:RESULT = cons(pd, p);:}
+                                | parameterDeclaration:pd                                                               {:RESULT = cons(pd, nil());:}
+                                | /* empty */                                                                           {:RESULT = nil();:};
 
-parameterDeclaration ::=        IDENT COLON namedTypeExpression
-                                | REF IDENT COLON namedTypeExpression;
+parameterDeclaration ::=        IDENT:pos COLON namedTypeExpression:exp                                                 {:RESULT = new ParameterDeclaration(new Position(posleft, posright), pos, exp, false);:}
+                                | REF IDENT:pos COLON namedTypeExpression:exp                                           {:RESULT = new ParameterDeclaration(new Position(posleft, posright), pos, exp, true);:};
 
 
 // BODY
-body ::=                        body statements
-                                | /* empty */;
+body ::=                        statement:s body:b                                                                      {:RESULT = cons(s, b);:}
+                                | /* empty */                                                                           {:RESULT = nil();:};
 
-statements ::=                  SEMIC
-                                | LCURL body RCURL
-                                | assignStatement
-                                | ifStatement
-                                | whileStatement
-                                | callStatment;
+statement ::=                   SEMIC:pos                                                                               {:RESULT = new EmptyStatement(new Position(posleft, posright));:}
+                                | LCURL body:pos RCURL                                                                  {:RESULT = new CompoundStatement(new Position(posleft, posright), pos);:}
+                                | assignStatement:as                                                                    {:RESULT = as;:}
+                                | ifStatement:is                                                                        {:RESULT = is;:}
+                                | whileStatement:ws                                                                     {:RESULT = ws;:}
+                                | callStatement:cs                                                                      {:RESULT = cs;:};
 
-assignStatement ::=             namedVariable ASGN binaryExpression SEMIC
-                                | arrayAccess ASGN binaryExpression SEMIC;
+assignStatement ::=             namedVariable:pos ASGN binaryExpression:expr SEMIC                                      {:RESULT = new AssignStatement(new Position(posleft, posright), pos, expr);:}
+                                | arrayAccess:pos ASGN binaryExpression:expr SEMIC                                      {:RESULT = new AssignStatement(new Position(posleft, posright), pos, expr);:};
 
-ifStatement ::=                 IF LPAREN binaryExpression RPAREN statements
-                                | IF LPAREN binaryExpression RPAREN statements ELSE statements;
+ifStatement ::=                 IF:pos LPAREN binaryExpression:exp RPAREN statement:stm                                 {:RESULT = new IfStatement(new Position(posleft, posright), exp, stm, new EmptyStatement(Position.ERROR_POSITION));:}
+                                | IF:pos LPAREN binaryExpression:exp RPAREN statement:stm ELSE statement:els            {:RESULT = new IfStatement(new Position(posleft, posright), exp, stm, els);:};
 
-whileStatement ::=              WHILE LPAREN binaryExpression RPAREN statements;
+whileStatement ::=              WHILE:pos LPAREN binaryExpression:exp RPAREN statement:stm                              {:RESULT = new WhileStatement(new Position(posleft, posright), exp, stm);:};
 
-callStatment ::=                IDENT LPAREN arguments RPAREN SEMIC;
+callStatement ::=               IDENT:id LPAREN arguments:args RPAREN SEMIC                                             {:RESULT = new CallStatement(new Position(idleft, idright), id, args);:};
 
-arguments ::=                   arguments COMMA binaryExpression
-                                | binaryExpression;
+arguments ::=                   binaryExpression:be COMMA arguments:a                                                   {:RESULT = cons(be, a);:}
+                                | binaryExpression:be                                                                   {:RESULT = cons(be, nil());:}
+                                | /* empty */                                                                           {:RESULT = nil();:};

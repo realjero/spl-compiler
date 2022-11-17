@@ -71,7 +71,7 @@ var       {return symbol(Sym.VAR);}
 "}"       {return symbol(Sym.RCURL);}
 
 // SPL - Bezeichner
-[a-zA-Z_][a-zA-Z_0-9]*      {return symbol(Sym.IDENT, yytext());}
+[a-zA-Z_][a-zA-Z_0-9]*      {return symbol(Sym.IDENT, new Identifier(yytext()));}
 [0-9]+                      {return symbol(Sym.INTLIT, Integer.valueOf(yytext()));}
 0x[0-9A-Fa-f]+              {return symbol(Sym.INTLIT, Integer.parseInt(yytext().substring(2), 16));}
 
