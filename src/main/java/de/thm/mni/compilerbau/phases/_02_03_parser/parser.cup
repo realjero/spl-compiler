@@ -155,11 +155,11 @@ faktor ::=                      LPAREN expr:e RPAREN                            
 
 
 // PROC
-procedureDeclaration ::=        PROC:pos IDENT:id LPAREN parameters:p RPAREN LCURL variables:v body:b RCURL             {:RESULT = new ProcedureDeclaration(new Position(posleft, posright), id, p, v, b);:};
+procedureDeclaration ::=        PROC:pos IDENT:id LPAREN parameters:p RPAREN LCURL variables:v body:b RCURL             {:RESULT = new ProcedureDeclaration(new Position(posleft, posright), id, p, v, b);:}
+                                | PROC:pos IDENT:id LPAREN RPAREN LCURL variables:v body:b RCURL                        {:RESULT = new ProcedureDeclaration(new Position(posleft, posright), id, nil(), v, b);:};
 
 parameters ::=                  parameterDeclaration:pd COMMA parameters:p                                              {:RESULT = cons(pd, p);:}
-                                | parameterDeclaration:pd                                                               {:RESULT = cons(pd, nil());:}
-                                | /* empty */                                                                           {:RESULT = nil();:};
+                                | parameterDeclaration:pd                                                               {:RESULT = cons(pd, nil());:};
 
 parameterDeclaration ::=        IDENT:pos COLON namedTypeExpression:exp                                                 {:RESULT = new ParameterDeclaration(new Position(posleft, posright), pos, exp, false);:}
                                 | REF IDENT:pos COLON namedTypeExpression:exp                                           {:RESULT = new ParameterDeclaration(new Position(posleft, posright), pos, exp, true);:};
@@ -184,8 +184,8 @@ ifStatement ::=                 IF:pos LPAREN binaryExpression:exp RPAREN statem
 
 whileStatement ::=              WHILE:pos LPAREN binaryExpression:exp RPAREN statement:stm                              {:RESULT = new WhileStatement(new Position(posleft, posright), exp, stm);:};
 
-callStatement ::=               IDENT:id LPAREN arguments:args RPAREN SEMIC                                             {:RESULT = new CallStatement(new Position(idleft, idright), id, args);:};
+callStatement ::=               IDENT:id LPAREN arguments:args RPAREN SEMIC                                             {:RESULT = new CallStatement(new Position(idleft, idright), id, args);:}
+                                | IDENT:id LPAREN RPAREN SEMIC                                                          {:RESULT = new CallStatement(new Position(idleft, idright), id, nil());:};
 
 arguments ::=                   binaryExpression:be COMMA arguments:a                                                   {:RESULT = cons(be, a);:}
-                                | binaryExpression:be                                                                   {:RESULT = cons(be, nil());:}
-                                | /* empty */                                                                           {:RESULT = nil();:};
+                                | binaryExpression:be                                                                   {:RESULT = cons(be, nil());:};
